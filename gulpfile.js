@@ -41,11 +41,6 @@ function CreateDir(project, files) {
             }
 
         }
-        if (!fs.existsSync(`${paths.soursDir.js}/${paths.webpCheckScript}`)) {
-            fs.writeFileSync(paths.source.js, "//= ../js/webpCheck.js");
-            return src(paths.webpCheckScript)
-                .pipe(dest(paths.soursDir.js))
-        }
 
     } catch (err) {
         console.log(err);
@@ -54,8 +49,14 @@ function CreateDir(project, files) {
 
 }
 
-async function InitProject() {
-    await CreateDir(paths.soursDir, paths.sourceFiles);
+function InitProject() {
+    CreateDir(paths.soursDir, paths.sourceFiles);
+
+    if (!fs.existsSync(`${paths.soursDir.js}/${paths.webpCheckScript}`)) {
+        fs.writeFileSync(paths.source.js, "//= ../js/webpCheck.js");
+        return src(paths.webpCheckScript)
+            .pipe(dest(paths.soursDir.js))
+    }
 }
 //Автоматически обновляет браузер после редактирования файлов
 function BrowserSync() {
@@ -161,8 +162,8 @@ function watchFile() {
     gulp.watch([paths.watch.img], img);
 }
 
-const build = gulp.series(InitProject, clean, gulp.parallel(css, html, js, img, fonts));
-const watch = gulp.parallel(build, watchFile, BrowserSync);
+const build = gulp.series(clean, gulp.parallel(css, html, js, img, fonts));
+const watch = gulp.series(InitProject, gulp.parallel(build, watchFile, BrowserSync));
 
 exports.otf2ttf = otf2ttf;
 exports.fonts = fonts;
