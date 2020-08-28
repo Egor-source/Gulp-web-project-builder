@@ -4,6 +4,7 @@ const projectFolder = require("path").basename(__dirname);
 const sourceFolder = "#source";
 
 const webpCheckScript = 'webpCheck.js';
+const fontsMixin = "fontsMixin.scss";
 //Пути проекта
 const build = {
     html: `${projectFolder}/`,
@@ -34,6 +35,7 @@ const sourceFiles = {
         html: `${sourceFolder}/index.html`,
         css: `${sourceFolder}/scss/style.scss`,
         js: `${sourceFolder}/js/script.js`,
+        fonts: `${sourceFolder}/scss/fonts.scss`
     }
     //Отслеживаемые файлы
 const watch = {
@@ -41,10 +43,12 @@ const watch = {
     css: `${sourceFolder}/scss/**/*.scss`,
     js: `${sourceFolder}/js/**/*.js`,
     img: `${sourceFolder}/img/**/*.{jpg,png,ico,svg,gif,webp}`,
+    fonts: `${sourceFolder}/fonts/**/*.ttf`
 };
 
 const clean = `./${projectFolder}/`;
 
+exports.fontsMixin = fontsMixin;
 exports.webpCheckScript = webpCheckScript
 exports.soursDir = soursDir;
 exports.projectFolder = projectFolder;

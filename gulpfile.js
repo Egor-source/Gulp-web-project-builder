@@ -16,8 +16,7 @@ const { src, dest } = require('gulp'),
     webpHtml = require('gulp-webp-html'),
     webpCss = require('gulp-webp-css'),
     ttf2woff = require('gulp-ttf2woff'),
-    ttf2woff2 = require('gulp-ttf2woff2'),
-    fonter = require('gulp-fonter')
+    ttf2woff2 = require('gulp-ttf2woff2');
 const { mkdir, mkdirSync } = require('fs');
 const fs = require('fs');
 const imagemin = require("gulp-imagemin");
@@ -46,16 +45,22 @@ function CreateDir(project, files) {
         console.log(err);
     }
 
-
 }
 
-function InitProject() {
+async function InitProject() {
     CreateDir(paths.soursDir, paths.sourceFiles);
 
     if (!fs.existsSync(`${paths.soursDir.js}/${paths.webpCheckScript}`)) {
-        fs.writeFileSync(paths.source.js, "//= ../js/webpCheck.js");
-        return src(paths.webpCheckScript)
+        fs.appendFileSync(paths.source.js, "//= ../js/webpCheck.js");
+        src(paths.webpCheckScript)
             .pipe(dest(paths.soursDir.js))
+    }
+
+    if (!fs.existsSync(`${paths.soursDir.css}/${paths.fontsMixin}`)) {
+        fs.appendFileSync(paths.source.css, '@import "fontsMixin.scss";\n@import "fonts.scss";');
+        return src(paths.fontsMixin)
+            .pipe(dest(paths.soursDir.css))
+
     }
 }
 //Автоматически обновляет браузер после редактирования файлов
@@ -87,20 +92,19 @@ function css() {
         .pipe(scss({
             outputStyle: "expanded"
         }))
+        .pipe(groupeMedia())
+        .pipe(webpCss())
+        .pipe(dest(paths.build.css))
         .pipe(autoPrefixer({
             cascade: true,
             overrideBrowserslist: ["last 5 version"]
         }))
-        .pipe(groupeMedia())
-        .pipe(webpCss())
-        .pipe(dest(paths.build.css))
         .pipe(cleanCss())
         .pipe(rename({
             extname: ".min.css"
         }))
         .pipe(dest(paths.build.css))
-
-    .pipe(browserSync.stream())
+        .pipe(browserSync.stream())
 }
 //Обрабатывает js файлы
 function js() {
@@ -139,20 +143,35 @@ function fonts() {
 
     src(paths.source.fonts)
         .pipe(ttf2woff())
-        .pipe(dest(paths.build.img));
+        .pipe(dest(paths.build.fonts));
 
     return src(paths.source.fonts)
+        .pipe(dest(paths.build.fonts))
         .pipe(ttf2woff2())
-        .pipe(dest(paths.build.img))
+        .pipe(dest(paths.build.fonts))
+}
+//Подключает все шрифты в проект
+function fontsStyle() {
+    let file_content = fs.readFileSync(paths.sourceFolder + '/scss/fonts.scss');
+    if (file_content == '') {
+        fs.writeFile(paths.sourceFolder + '/scss/fonts.scss', '', cb);
+        return fs.readdir(paths.build.fonts, function(err, items) {
+            if (items) {
+                let c_fontname;
+                for (var i = 0; i < items.length; i++) {
+                    let fontname = items[i].split('.');
+                    fontname = fontname[0];
+                    if (c_fontname != fontname) {
+                        fs.appendFile(paths.sourceFolder + '/scss/fonts.scss', '@include font("' + fontname + '", "' + fontname + '", "400", "normal");\r\n', cb);
+                    }
+                    c_fontname = fontname;
+                }
+            }
+        })
+    }
 }
 
-function otf2ttf() {
-    return src(`${paths.soursDir.fonts}*.otf`)
-        .pipe(fonter({
-
-        }))
-        .pipe(dest(paths.soursDir.fonts))
-}
+function cb() {}
 
 //Следит за изменением файлов
 function watchFile() {
@@ -160,12 +179,13 @@ function watchFile() {
     gulp.watch([paths.watch.css], css);
     gulp.watch([paths.watch.js], js);
     gulp.watch([paths.watch.img], img);
+    gulp.watch([paths.watch.fonts], fonts);
 }
 
-const build = gulp.series(clean, gulp.parallel(css, html, js, img, fonts));
-const watch = gulp.series(InitProject, gulp.parallel(build, watchFile, BrowserSync));
+const build = gulp.series(clean, gulp.parallel(css, html, js, img, fonts), fontsStyle);
+const watch = gulp.series(gulp.parallel(build, watchFile, BrowserSync));
 
-exports.otf2ttf = otf2ttf;
+exports.fontsStyle = fontsStyle;
 exports.fonts = fonts;
 exports.images = img;
 exports.js = js;
